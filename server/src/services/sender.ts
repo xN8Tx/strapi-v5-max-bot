@@ -28,7 +28,7 @@ const sender = ({ strapi }: { strapi: Core.Strapi }) => ({
         );
       });
 
-      this.bot.start();
+      await this.bot.start();
     } catch (error) {
       strapi.log.error(error);
     }

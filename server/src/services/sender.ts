@@ -10,82 +10,102 @@ const sender = ({ strapi }: { strapi: Core.Strapi }) => ({
   chatIds: [],
 
   async setupBot() {
-    if (!this.token) {
-      const isTokenSet = await this.setId();
-      if (!isTokenSet) return;
-    }
+    try {
+      if (!this.token) {
+        const isTokenSet = await this.setId();
+        if (!isTokenSet) return;
+      }
 
-    this.bot = new Bot(this.token);
+      this.bot = new Bot(this.token);
 
-    this.bot.command('start', (ctx) => {
-      // @ts-ignore
-      console.log(ctx.chatId);
-      // @ts-ignore
-      ctx.reply(
+      this.bot.command('start', (ctx) => {
         // @ts-ignore
-        `Ваш ID: ${ctx?.message?.recipient?.user_id}\nChat ID: ${ctx?.chatId}`
-      );
-    });
+        console.log(ctx.chatId);
+        // @ts-ignore
+        ctx.reply(
+          // @ts-ignore
+          `Ваш ID: ${ctx?.message?.recipient?.user_id}\nChat ID: ${ctx?.chatId}`
+        );
+      });
 
-    this.bot.start();
+      this.bot.start();
+    } catch (error) {
+      strapi.log.error(error);
+    }
   },
 
   async setId() {
-    const tokenResponse = await strapi
-      .documents(`plugin::${PLUGIN_ID}.${PLUGIN_ID}-token`)
-      .findMany();
+    try {
+      const tokenResponse = await strapi
+        .documents(`plugin::${PLUGIN_ID}.${PLUGIN_ID}-token`)
+        .findMany();
 
-    if (!tokenResponse || tokenResponse.length === 0) {
-      strapi.log.error(
-        `Max bot token for plugin ${PLUGIN_ID} is not configured. Please configure it in the Strapi admin panel.`
-      );
+      if (!tokenResponse || tokenResponse.length === 0) {
+        strapi.log.error(
+          `Max bot token for plugin ${PLUGIN_ID} is not configured. Please configure it in the Strapi admin panel.`
+        );
 
-      this.token = null;
-      return false;
+        this.token = null;
+        return false;
+      }
+
+      this.token = tokenResponse[0].key;
+      return true;
+    } catch (error) {
+      strapi.log.error(error);
     }
-
-    this.token = tokenResponse[0].key;
-    return true;
   },
 
   async setChatIds() {
-    const usersResponse = await strapi
-      .documents(`plugin::${PLUGIN_ID}.${PLUGIN_ID}-user`)
-      .findMany();
+    try {
+      const usersResponse = await strapi
+        .documents(`plugin::${PLUGIN_ID}.${PLUGIN_ID}-user`)
+        .findMany();
 
-    if (!usersResponse || usersResponse.length === 0) {
-      strapi.log.error(
-        `Max bot users for plugin ${PLUGIN_ID} is not configured. Please configure it in the Strapi admin panel.`
-      );
+      if (!usersResponse || usersResponse.length === 0) {
+        strapi.log.error(
+          `Max bot users for plugin ${PLUGIN_ID} is not configured. Please configure it in the Strapi admin panel.`
+        );
 
-      this.chatIds = [];
-      return false;
+        this.chatIds = [];
+        return false;
+      }
+
+      this.chatIds = usersResponse.map((el) => el.chatId);
+      return true;
+    } catch (error) {
+      strapi.log.error(error);
     }
-
-    this.chatIds = usersResponse.map((el) => el.chatId);
-    return true;
   },
 
   async sendMessage(message: string) {
-    if (!this.bot) {
-      this.setupBot();
+    try {
+      if (!this.bot) {
+        this.setupBot();
+      }
+
+      if (this.chatIds.length === 0) {
+        const isUsersSet = await this.setChatIds();
+        if (!isUsersSet) return;
+      }
+
+      const requests = this.chatIds.map(async (el) => {
+        await this.bot.api.sendMessageToChat(el, message);
+      });
+
+      return await Promise.allSettled(requests);
+    } catch (error) {
+      strapi.log.error(error);
     }
-
-    if (this.chatIds.length === 0) {
-      const isUsersSet = await this.setChatIds();
-      if (!isUsersSet) return;
-    }
-
-    const requests = this.chatIds.map(async (el) => {
-      await this.bot.api.sendMessageToChat(el, message);
-    });
-
-    return await Promise.allSettled(requests);
   },
 
   async stopBot() {
-    if (!this.bot) return;
-    this.bot.stop();
+    try {
+      if (!this.bot) return;
+      this.bot.stop();
+    } catch (error) {
+      strapi.log.error(error);
+    }
   },
 });
 

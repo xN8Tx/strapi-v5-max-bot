@@ -19,31 +19,59 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
 
   const sender = strapi.plugin(PLUGIN_ID).service('sender');
 
-  sender.setupBot();
+  try {
+    sender.setupBot();
+  } catch (err) {
+    strapi.log.error(err);
+  }
 
   strapi.db.lifecycles.subscribe({
     models: [`plugin::${PLUGIN_ID}.${PLUGIN_ID}-token`],
     async afterCreate() {
-      await sender.setId();
+      try {
+        await sender.setId();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
     async afterUpdate() {
-      await sender.setId();
+      try {
+        await sender.setId();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
     async afterDelete() {
-      await sender.setId();
+      try {
+        await sender.setId();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
   });
 
   strapi.db.lifecycles.subscribe({
     models: [`plugin::${PLUGIN_ID}.${PLUGIN_ID}-user`],
     async afterCreate() {
-      await sender.setChatIds();
+      try {
+        await sender.setChatIds();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
     async afterUpdate() {
-      await sender.setChatIds();
+      try {
+        await sender.setChatIds();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
     async afterDelete() {
-      await sender.setChatIds();
+      try {
+        await sender.setChatIds();
+      } catch (err) {
+        strapi.log.error(err);
+      }
     },
   });
 };
